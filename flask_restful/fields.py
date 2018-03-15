@@ -350,16 +350,19 @@ class DateTime(Raw):
     :param dt_format: ``'rfc822'`` or ``'iso8601'``
     :type dt_format: str
     """
-    def __init__(self, dt_format='rfc822', **kwargs):
+    def __init__(self, dt_format='rfc822', iso8601_sep='T', **kwargs):
         super(DateTime, self).__init__(**kwargs)
         self.dt_format = dt_format
+        self.iso8601_sep = iso8601_sep
 
     def format(self, value):
         try:
             if self.dt_format == 'rfc822':
                 return _rfc822(value)
             elif self.dt_format == 'iso8601':
-                return _iso8601(value)
+                return _iso8601(value, self.iso8601_sep)
+            elif self.dt_format == '%Y-%m-%d %H:%M:%S' or self.dt_format == '%Y-%m-%d %H:%M' or self.dt_format == '%Y-%m-%d':
+                return _custom_format(value, self.dt_format)
             else:
                 raise MarshallingException(
                     'Unsupported date format %s' % self.dt_format
@@ -403,7 +406,7 @@ def _rfc822(dt):
     return formatdate(timegm(dt.utctimetuple()))
 
 
-def _iso8601(dt):
+def _iso8601(dt, sep='T'):
     """Turn a datetime object into an ISO8601 formatted date.
 
     Example::
@@ -414,4 +417,15 @@ def _iso8601(dt):
     :type dt: datetime
     :return: A ISO 8601 formatted date string
     """
-    return dt.isoformat()
+    return dt.isoformat(sep)
+
+
+def _custom_format(dt, fmt):
+    """Turn a datetime object into a custom formatted date.
+    Example::
+        fields._cusom_format(datetime(2012, 1, 1, 0, 0), "%Y-%m-%d %H:%M:%S") => "2012-01-01 00:00:00"
+    :param dt: The datetime to transform
+    :type dt: datetime
+    :return: A custom formatted date string
+    """
+    return dt.strftime(fmt)
